@@ -1,26 +1,22 @@
 Name:       gst-plugins-ugly
 Summary:    GStreamer plugins from the "ugly" set
 Version:    0.10.19
-Release:    39 
-%if 0%{?tizen_profile_wearable}
-%else
-VCS:        framework/multimedia/gst-plugins-ugly0.10#gst-plugins-ugly0.10_0.10.19-1slp2+27-38-g2a83bca814e481abeeba0bcb243142eaffab2604
-%endif
+Release:    53
 Group:      Applications/Multimedia
 License:    LGPLv2+
 Source0:    %{name}-%{version}.tar.gz
-%if 0%{?tizen_profile_mobile}
-Patch0 :    gst-plugins-ugly-disable-gtk-doc-mobile.patch
-%else
-Patch0 :    gst-plugins-ugly-disable-gtk-doc-wearable.patch
-%endif
+Patch0 :    gst-plugins-ugly-disable-gtk-doc.patch
 BuildRequires:  gettext-tools
 BuildRequires:  which
 BuildRequires:  gst-plugins-base-devel
 BuildRequires:  pkgconfig(gstreamer-0.10)
 BuildRequires:  pkgconfig(glib-2.0)
+#BuildRequires:  pkgconfig(drm-client)
+#BuildRequires:  pkgconfig(drm-trusted)
+%if 0%{?sec_build_binary_sdk}
 BuildRequires:  pkgconfig(opencore-amrnb)
 BuildRequires:  pkgconfig(opencore-amrwb)
+%endif
 
 %description
  GStreamer is a streaming media framework, based on graphs of filters
@@ -41,14 +37,8 @@ BuildRequires:  pkgconfig(opencore-amrwb)
 
 
 %build
-%if 0%{?tizen_profile_mobile}
-cd mobile
-%else
-cd wearable
-%endif
-
 ./autogen.sh
-%configure --prefix=%{_prefix}\
+%configure \
  --disable-static\
  --disable-nls\
  --with-html-dir=/tmp/dump\
@@ -66,38 +56,27 @@ cd wearable
  --disable-mpeg2dec\
  --disable-sidplay\
  --disable-twolame\
- --disable-x264
-
-
-
+ --disable-x264\
+ --disable-realmedia\
+ --disable-drm-decryption\
+  --prefix=%{_prefix}
 make %{?jobs:-j%jobs}
 
 %install
-%if 0%{?tizen_profile_mobile}
-cd mobile
-%else
-cd wearable
-%endif
-
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/license
 cp COPYING %{buildroot}/usr/share/license/%{name}
 %make_install
 
 
-
-
 %files
-%if 0%{?tizen_profile_mobile}
-%manifest mobile/gst-plugins-ugly.manifest
-%else
-%manifest wearable/gst-plugins-ugly.manifest
-%endif
+%manifest gst-plugins-ugly.manifest
 %defattr(-,root,root,-)
 %{_libdir}/gstreamer-0.10/libgstmpegaudioparse.so
+/usr/share/license/%{name}
 %{_libdir}/gstreamer-0.10/libgstasf.so
-%{_libdir}/gstreamer-0.10/libgstrmdemux.so
+%if 0%{?sec_build_binary_sdk}
 %{_libdir}/gstreamer-0.10/libgstamrnb.so
 %{_libdir}/gstreamer-0.10/libgstamrwbdec.so
 %exclude %{_datadir}/gstreamer-0.10/presets/GstAmrnbEnc.prs
-%{_datadir}/license/%{name}
+%endif
