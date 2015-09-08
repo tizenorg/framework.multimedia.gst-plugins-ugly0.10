@@ -30,6 +30,9 @@ const ASFGuidHash asf_payload_ext_guids[] = {
   {ASF_PAYLOAD_EXTENSION_SYSTEM_PIXEL_ASPECT_RATIO,
         "ASF_PAYLOAD_EXTENSION_SYSTEM_PIXEL_ASPECT_RATIO",
       {0x1b1ee554, 0x4bc8f9ea, 0x6b371a82, 0xb8c4e474}},
+  {ASF_PAYLOAD_EXTENSION_SYSTEM_ENCRYPTION_SAMPLE_ID,
+          "ASF_PAYLOAD_EXTENSION_SYSTEM_ENCRYPTION_SAMPLE_ID",
+       {0x6698b84e, 0x43300afa, 0x0a1cb2ae, 0x4da4d798}},
   {ASF_PAYLOAD_EXTENSION_UNDEFINED, "ASF_PAYLOAD_EXTENSION_UNDEFINED",
         {0, 0, 0, 0}
       }
@@ -155,9 +158,9 @@ const ASFGuidHash asf_object_guids[] = {
    * streaming docs) in new PlayReady (c) (tm) (wtf) system, but I haven't
    * found a proper name for it.
    * (Edward Jan 11 2011).*/
-  {ASF_OBJ_UNKNOWN_ENCRYPTION_OBJECT, "ASF_OBJ_UNKNOWN_ENCRYPTION_OBJECT",
+  {ASF_OBJ_PLAYREADY_ENCRYPTION_OBJECT, "ASF_OBJ_PLAYREADY_ENCRYPTION_OBJECT",
         {0x9a04f079, 0x42869840, 0x5be692ab, 0x955f88e0}
-      },
+     },
   {ASF_OBJ_UNDEFINED, "ASF_OBJ_UNDEFINED",
         {0, 0, 0, 0}
       }

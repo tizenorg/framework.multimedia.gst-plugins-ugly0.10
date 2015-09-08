@@ -26,8 +26,9 @@
 
 #include "asfheaders.h"
 
+#include <gst/base/gstbitreader.h>
 G_BEGIN_DECLS
-  
+
 #define GST_TYPE_ASF_DEMUX \
   (gst_asf_demux_get_type())
 #define GST_ASF_DEMUX(obj) \
@@ -42,7 +43,6 @@ G_BEGIN_DECLS
 GST_DEBUG_CATEGORY_EXTERN (asfdemux_dbg);
 #define GST_CAT_DEFAULT asfdemux_dbg
 
-#define ASFDEMUX_MODIFICATION
 #define LAST_STOP_SEGMENT
 
 typedef struct _GstASFDemux GstASFDemux;
@@ -58,6 +58,7 @@ typedef struct {
                                      * struct gets packed into 4 bytes       */
   guint16                 len;      /* save this so we can skip unknown IDs  */
 } AsfPayloadExtension;
+
 
 typedef struct
 {
@@ -82,7 +83,148 @@ typedef struct
 
   /* missing: stream names */
 } AsfStreamExtProps;
+#ifdef ASFDEMUX_MODIFICATION
+typedef struct _GstMpeg4VideoObjectLayer        GstMpeg4VideoObjectLayer;
+typedef struct _GstMpeg4VisualObject            GstMpeg4VisualObject;
+typedef enum {
+  GST_MPEG4_SQUARE        = 0x01,
+  GST_MPEG4_625_TYPE_4_3  = 0x02,
+  GST_MPEG4_525_TYPE_4_3  = 0x03,
+  GST_MPEG4_625_TYPE_16_9 = 0x04,
+  GST_MPEG4_525_TYPE_16_9 = 0x05,
+  GST_MPEG4_EXTENDED_PAR  = 0x0f,
+} GstMpeg4AspectRatioInfo;
+typedef enum {
+  GST_MPEG4_VIDEO_ID         = 0x01,
+  GST_MPEG4_STILL_TEXTURE_ID = 0x02,
+  GST_MPEG4_STILL_MESH_ID    = 0x03,
+  GST_MPEG4_STILL_FBA_ID     = 0x04,
+  GST_MPEG4_STILL_3D_MESH_ID = 0x05,
+  /*... reserved */
 
+} GstMpeg4VisualObjectType;
+typedef enum {
+  /* Other value are reserved */
+  GST_MPEG4_CHROMA_4_2_0 = 0x01
+} GstMpeg4ChromaFormat;
+typedef enum {
+  GST_MPEG4_RECTANGULAR,
+  GST_MPEG4_BINARY,
+  GST_MPEG4_BINARY_ONLY,
+  GST_MPEG4_GRAYSCALE
+} GstMpeg4VideoObjectLayerShape;
+typedef enum {
+  GST_MPEG4_SPRITE_UNUSED,
+  GST_MPEG4_SPRITE_STATIC,
+  GST_MPEG4_SPRITE_GMG
+} GstMpeg4SpriteEnable;
+typedef enum {
+  GST_MPEG4_PARSER_OK,
+  GST_MPEG4_PARSER_BROKEN_DATA,
+  GST_MPEG4_PARSER_NO_PACKET,
+  GST_MPEG4_PARSER_NO_PACKET_END,
+  GST_MPEG4_PARSER_ERROR,
+} GstMpeg4ParseResult;
+struct _GstMpeg4VideoObjectLayer {
+  guint8 random_accessible_vol;
+  guint8 video_object_type_indication;
+
+  guint8 is_object_layer_identifier;
+  /* if is_object_layer_identifier */
+  guint8 verid;
+  guint8 priority;
+
+  GstMpeg4AspectRatioInfo aspect_ratio_info;
+  guint8 par_width;
+  guint8 par_height;
+
+  guint8 control_parameters;
+  /* if control_parameters */
+  GstMpeg4ChromaFormat chroma_format;
+  guint8 low_delay;
+  guint8 vbv_parameters;
+  /* if vbv_parameters */
+  guint16 first_half_bitrate;
+  guint16 latter_half_bitrate;
+  guint16 first_half_vbv_buffer_size;
+  guint16 latter_half_vbv_buffer_size;
+  guint16 first_half_vbv_occupancy;
+  guint16 latter_half_vbv_occupancy;
+
+  /* Computed values */
+  guint32 bit_rate;
+  guint32 vbv_buffer_size;
+
+  GstMpeg4VideoObjectLayerShape shape;
+  /* if shape == GST_MPEG4_GRAYSCALE && verid =! 1 */
+  guint8 shape_extension;
+
+  guint16 vop_time_increment_resolution;
+  guint8 vop_time_increment_bits;
+  guint8 fixed_vop_rate;
+  /* if fixed_vop_rate */
+  guint16 fixed_vop_time_increment;
+
+  guint16 width;
+  guint16 height;
+  guint8 interlaced;
+  guint8 obmc_disable;
+
+  GstMpeg4SpriteEnable sprite_enable;
+  /* if vol->sprite_enable == SPRITE_GMG or SPRITE_STATIC*/
+  /* if vol->sprite_enable != GST_MPEG4_SPRITE_GMG */
+  guint16 sprite_width;
+  guint16 sprite_height;
+  guint16 sprite_left_coordinate;
+  guint16 sprite_top_coordinate;
+
+  guint8 no_of_sprite_warping_points;
+  guint8 sprite_warping_accuracy;
+  guint8 sprite_brightness_change;
+  /* if vol->sprite_enable != GST_MPEG4_SPRITE_GMG */
+  guint8 low_latency_sprite_enable;
+
+  /* if shape != GST_MPEG4_RECTANGULAR */
+  guint8 sadct_disable;
+
+  guint8 not_8_bit;
+
+  /* if no_8_bit */
+  guint8 quant_precision;
+  guint8 bits_per_pixel;
+
+  /* if shape == GRAYSCALE */
+  guint8 no_gray_quant_update;
+  guint8 composition_method;
+  guint8 linear_composition;
+
+  guint8 quant_type;
+  /* if quant_type */
+  guint8 load_intra_quant_mat;
+  guint8 intra_quant_mat[64];
+  guint8 load_non_intra_quant_mat;
+  guint8 non_intra_quant_mat[64];
+
+  guint8 quarter_sample;
+  guint8 complexity_estimation_disable;
+  guint8 resync_marker_disable;
+  guint8 data_partitioned;
+  guint8 reversible_vlc;
+  guint8 newpred_enable;
+  guint8 reduced_resolution_vop_enable;
+  guint8 scalability;
+  guint8 enhancement_type;
+
+  //GstMpeg4VideoPlaneShortHdr short_hdr;
+};
+struct _GstMpeg4VisualObject {
+  guint8 is_identifier;
+  /* If is_identifier */
+  guint8 verid;
+  guint8 priority;
+ GstMpeg4VisualObjectType type;
+};
+#endif
 #ifdef ASFDEMUX_MODIFICATION
 typedef struct
 {
@@ -259,6 +401,21 @@ struct _GstASFDemux {
   GstClockTime         stop_ts;
   GstClockTime         current_ts;
   AsfTrickplayInfo trickplay_info;
+  guint                header_length;
+  guint                header_size;
+  GstClockTime         packet_send_time;
+  gboolean             is_seeked;
+  // For Enabling Playready content
+  gchar                *file_location;
+  gboolean              null_ready_state;
+  // Playready content
+  gboolean             playback_protected;
+  // downloading mode
+  gboolean             downloading_mode;
+  guint                no_of_video_streams;
+  guint                linked_video_stream_no;
+  guint                index_table_no;
+  gboolean             is_drm_file;
 #endif
 
 #ifdef CODEC_ENTRY
@@ -277,7 +434,7 @@ struct _GstASFDemuxClass {
 GType           gst_asf_demux_get_type (void);
 
 AsfStream     * gst_asf_demux_get_stream (GstASFDemux * demux, guint16 id);
-
+void asfdemux_post_trusted_drm_error (GstASFDemux * demux, int drm_error);
 G_END_DECLS
 
 #endif /* __ASF_DEMUX_H__ */

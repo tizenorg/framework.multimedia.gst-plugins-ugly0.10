@@ -1,17 +1,18 @@
 Name:       gst-plugins-ugly
 Summary:    GStreamer plugins from the "ugly" set
 Version:    0.10.19
-Release:    3
+Release:    54
 Group:      Applications/Multimedia
-License:    LGPLv2+
+License:    LGPL-2.1+
 Source0:    %{name}-%{version}.tar.gz
 Patch0 :    gst-plugins-ugly-disable-gtk-doc.patch
 BuildRequires:  gettext-tools
 BuildRequires:  which
 BuildRequires:  gst-plugins-base-devel
-BuildRequires:  pkgconfig(gstreamer-0.10) 
+BuildRequires:  pkgconfig(gstreamer-0.10)
 BuildRequires:  pkgconfig(glib-2.0)
-BuildRequires:  pkgconfig(liboil-0.3)
+#BuildRequires:  pkgconfig(drm-client)
+#BuildRequires:  pkgconfig(drm-trusted)
 BuildRequires:  pkgconfig(opencore-amrnb)
 BuildRequires:  pkgconfig(opencore-amrwb)
 
@@ -29,13 +30,13 @@ BuildRequires:  pkgconfig(opencore-amrwb)
 
 
 %prep
-%setup -q 
+%setup -q
 %patch0 -p1
 
 
 %build
 ./autogen.sh
-%configure --prefix=%{_prefix}\
+%configure \
  --disable-static\
  --disable-nls\
  --with-html-dir=/tmp/dump\
@@ -53,25 +54,25 @@ BuildRequires:  pkgconfig(opencore-amrwb)
  --disable-mpeg2dec\
  --disable-sidplay\
  --disable-twolame\
- --disable-x264
-
-
-
+ --disable-x264\
+ --disable-realmedia\
+ --disable-drm-decryption\
+  --prefix=%{_prefix}
 make %{?jobs:-j%jobs}
 
 %install
 rm -rf %{buildroot}
+mkdir -p %{buildroot}/usr/share/license
+cp COPYING %{buildroot}/usr/share/license/%{name}
 %make_install
 
 
-
-
 %files
+%manifest gst-plugins-ugly.manifest
 %defattr(-,root,root,-)
 %{_libdir}/gstreamer-0.10/libgstmpegaudioparse.so
+/usr/share/license/%{name}
 %{_libdir}/gstreamer-0.10/libgstasf.so
 %{_libdir}/gstreamer-0.10/libgstamrnb.so
 %{_libdir}/gstreamer-0.10/libgstamrwbdec.so
-%{_libdir}/gstreamer-0.10/libgstrmdemux.so
 %exclude %{_datadir}/gstreamer-0.10/presets/GstAmrnbEnc.prs
-

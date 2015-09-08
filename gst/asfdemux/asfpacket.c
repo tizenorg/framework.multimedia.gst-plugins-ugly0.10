@@ -36,7 +36,7 @@ asf_packet_read_varlen_int (guint lentype_flags, guint lentype_bit_offset,
     const guint8 ** p_data, guint * p_size)
 {
   static const guint lens[4] = { 0, 1, 2, 4 };
-  guint len, val;
+  guint len = 0, val = 0;
 
   len = lens[(lentype_flags >> lentype_bit_offset) & 0x03];
 
@@ -98,10 +98,19 @@ asf_payload_find_previous_fragment (AsfPayload * payload, AsfStream * stream)
 
   ret =
       &g_array_index (stream->payloads, AsfPayload, stream->payloads->len - 1);
-
+#ifdef ASFDEMUX_MODIFICATION
+  if(ret && (ret->buf==NULL))
+  {
+    return NULL;
+  }
+#endif
   if (G_UNLIKELY (ret->mo_size != payload->mo_size ||
           ret->mo_number != payload->mo_number || ret->mo_offset != 0)) {
+#ifdef ASFDEMUX_MODIFICATION
+    if (payload->mo_size != 0 || ret->buf == NULL) {
+#else
     if (payload->mo_size != 0) {
+#endif
       GST_WARNING ("Previous fragment does not match continued fragment");
       return NULL;
     } else {
@@ -152,7 +161,12 @@ gst_asf_payload_queue_for_stream (GstASFDemux * demux, AsfPayload * payload,
 
     idx_last = stream->payloads->len - 1;
     prev = &g_array_index (stream->payloads, AsfPayload, idx_last);
-
+#ifdef ASFDEMUX_MODIFICATION
+    if((prev == NULL) || (prev->buf == NULL)) {
+      GST_ERROR("illegal case");
+      break;
+    }
+#endif
     if (G_UNLIKELY (gst_asf_payload_is_complete (prev)))
       break;
 
@@ -255,7 +269,9 @@ asf_payload_parse_replicated_data_extensions (AsfStream * stream,
               ext->len);
         }
         break;
-
+      case ASF_PAYLOAD_EXTENSION_SYSTEM_ENCRYPTION_SAMPLE_ID:
+    	  	  GST_DEBUG ("ASF_PAYLOAD_EXTENSION_SYSTEM_ENCRYPTION_SAMPLE_ID");
+              break;
       default:
         GST_WARNING ("UNKNOWN PAYLOAD EXTENSION !");
         break;
@@ -384,6 +400,12 @@ gst_asf_demux_parse_payload (GstASFDemux * demux, AsfPacket * packet,
         && payload_len) {
       payload.buf = asf_packet_create_payload_buffer (packet, p_data, p_size,
           payload_len);
+#ifdef ASFDEMUX_MODIFICATION
+      if(payload.buf==NULL)
+      {
+        return FALSE;
+      }
+#endif
       /* n-th fragment of a fragmented media object? */
       if (payload.mo_offset != 0) {
         AsfPayload *prev;

@@ -22,7 +22,6 @@
 
 G_BEGIN_DECLS
 
-#define ASFDEMUX_ENABLE_PLAYREADY
 typedef struct {
   guint32 v1;
   guint32 v2;
@@ -69,6 +68,7 @@ typedef enum {
   ASF_OBJ_DIGITAL_SIGNATURE_OBJECT,
   ASF_OBJ_SCRIPT_COMMAND,
   ASF_OBJ_MARKER,
+  ASF_OBJ_PLAYREADY_ENCRYPTION_OBJECT,
   ASF_OBJ_UNKNOWN_ENCRYPTION_OBJECT
 } AsfObjectID;
 
@@ -89,6 +89,7 @@ typedef enum {
   ASF_PAYLOAD_EXTENSION_DURATION,
   ASF_PAYLOAD_EXTENSION_SYSTEM_CONTENT,
   ASF_PAYLOAD_EXTENSION_SYSTEM_PIXEL_ASPECT_RATIO,
+  ASF_PAYLOAD_EXTENSION_SYSTEM_ENCRYPTION_SAMPLE_ID
 } AsfPayloadExtensionID;
 
 extern const ASFGuidHash asf_payload_ext_guids[];
@@ -114,6 +115,8 @@ struct _asf_stream_audio {
   guint16 block_align;
   guint16 word_size;
   guint16 size;
+  gint layer;
+  gint version;
 };
 
 typedef struct _asf_stream_audio asf_stream_audio;
